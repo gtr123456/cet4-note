@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff8d6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="四级单词">
+<title>四级单词便签</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;padding:16px 14px 28px;background:#efe6cf;
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:#3a2c18;display:flex;justify-content:center;
+  }
+  .note{
+    width:100%;max-width:480px;background:#fff8d6;border-radius:14px;
+    box-shadow:0 6px 20px rgba(120,95,40,.18);padding:14px 14px 18px;position:relative;
+  }
+  .tape{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:92px;height:18px;
+    background:rgba(214,202,170,.55);border-radius:3px}
+  header{display:flex;align-items:baseline;justify-content:space-between;margin:6px 2px 4px}
+  h1{font-size:19px;margin:0;font-family:"Kaiti SC","KaiTi",serif;letter-spacing:1px}
+  .day{font-size:12px;color:#a8874f}
+  .bar{height:5px;background:#eee0b4;border-radius:9px;overflow:hidden;margin:8px 2px 14px}
+  .bar i{display:block;height:100%;width:0;background:#c49434;border-radius:9px;transition:width .2s}
+  h2{font-size:13px;color:#7a5c26;margin:16px 2px 6px;display:flex;justify-content:space-between;align-items:baseline}
+  h2 span{font-size:11px;color:#b09460;font-weight:400}
+  .item{display:flex;gap:10px;align-items:flex-start;background:#fffdf0;border-radius:10px;
+    padding:11px 12px;margin-bottom:7px;border:1px solid transparent;transition:.15s}
+  .item:active{background:#fbf3cf}
+  .item.done{opacity:.5}
+  .item.done .w{text-decoration:line-through}
+  .cb{width:20px;height:20px;border-radius:50%;border:1.6px solid #c6b28c;flex:none;margin-top:2px;
+    display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+  .item.done .cb{background:#c49434;border-color:#c49434}
+  .cb::after{content:"";}
+  .item.done .cb::after{content:"✓"}
+  .txt{flex:1;min-width:0}
+  .w{font-weight:700;font-size:16px;letter-spacing:.2px}
+  .m{font-size:12.5px;color:#8b7550;margin-top:2px}
+  .tag{font-size:10px;color:#9a7a3c;background:#f0e2b8;border-radius:5px;padding:1px 5px;flex:none;margin-top:3px}
+  .empty{font-size:12.5px;color:#b09460;padding:8px 12px}
+  footer{margin-top:18px;display:flex;gap:10px}
+  button{flex:1;font:inherit;font-size:13px;padding:9px;border-radius:9px;border:1px solid #ddc98f;
+    background:#fdf3cf;color:#7a5c26}
+  button:active{background:#f4e6b8}
+  .hint{font-size:11px;color:#ad9260;margin-top:12px;text-align:center;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="note">
+  <div class="tape"></div>
+  <header>
+    <h1>四级单词</h1>
+    <div class="day" id="day"></div>
+  </header>
+  <div class="bar"><i id="bar"></i></div>
+
+  <h2>新词 <span id="newCount"></span></h2>
+  <div id="newList"></div>
+
+  <h2>复习 <span id="revCount"></span></h2>
+  <div id="revList"></div>
+
+  <footer>
+    <button id="reset">重新开始</button>
+  </footer>
+  <div class="hint">点一下打勾 · 进度存在本机 · 加到主屏幕可当 App 用</div>
+</div>
+
+<script>
+const WORDS = [["effect", "n.", "效果；影响（≠affect 动词）"], ["bribe", "n./v.", "贿赂"], ["comprise", "v.", "包含；构成"], ["confess", "v.", "坦白"], ["ambiguous", "a.", "模糊的；有歧义的"], ["respectful", "a.", "恭敬的（≠respectable）"], ["personnel", "n.", "全体人员（≠personal）"], ["adhere", "v.", "坚持；黏附"], ["commute", "v.", "通勤"], ["bizarre", "a.", "奇异的"], ["cite", "v.", "引用"], ["compile", "v.", "汇编"], ["adopt", "v.", "采纳；收养（≠adapt 适应）"], ["component", "n.", "组成部分"], ["confront", "v.", "面对；对抗"], ["browse", "v.", "浏览"], ["industrious", "a.", "勤奋的（≠industrial）"], ["analogy", "n.", "类比"], ["accelerate", "v.", "加速；促进"], ["casual", "a.", "随意的；偶然的"], ["consensus", "n.", "共识"], ["abolish", "v.", "废除；取消"], ["though", "conj.", "虽然（≠through）"], ["attain", "v.", "达到；获得"], ["rise", "v.", "上升（不及物；≠raise）"], ["bias", "n.", "偏见"], ["personal", "a.", "个人的（≠personnel 人员）"], ["circulate", "v.", "循环；传播"], ["adequate", "a.", "足够的"], ["commission", "n.", "委员会；佣金"], ["coherent", "a.", "连贯的"], ["conceive", "v.", "构想；怀孕"], ["boost", "v.", "促进；提高"], ["agenda", "n.", "议程"], ["competent", "a.", "有能力的"], ["historic", "a.", "有历史意义的（≠historical）"], ["principal", "a./n.", "主要的；校长（≠principle）"], ["certify", "v.", "证明；发证"], ["accommodate", "v.", "容纳；适应"], ["avert", "v.", "避免；转移"], ["commodity", "n.", "商品"], ["borrow", "v.", "借入（≠lend 借出）"], ["conform", "v.", "遵守；符合"], ["amend", "v.", "修订"], ["compress", "v.", "压缩"], ["adapt", "v.", "适应；改编（≠adopt 采纳）"], ["brisk", "a.", "轻快的；活跃的"], ["respectable", "a.", "体面的；可敬的（≠respectful）"], ["principle", "n.", "原则；原理（≠principal）"], ["celebrity", "n.", "名人"], ["abundant", "a.", "丰富的；充裕的"], ["autonomy", "n.", "自治；自主"], ["conscious", "a.", "有意识的"], ["practice", "n.", "练习（名词；英式动词用 practise）"], ["accumulate", "v.", "积累"], ["abrupt", "a.", "突然的；唐突的"], ["expect", "v.", "期待（≠except 除外）"], ["cater", "v.", "迎合；提供饮食"], ["considerate", "a.", "体贴的（≠considerable）"], ["attribute", "v.", "把……归因于"], ["compensate", "v.", "补偿"], ["imaginary", "a.", "虚构的（≠imaginative）"], ["concede", "v.", "承认；让步"], ["breed", "v.", "繁殖；培育"], ["affect", "v.", "影响（≠effect 效果）"], ["alternative", "n./a.", "替代（的）"], ["administer", "v.", "管理；实施"], ["clarify", "v.", "澄清"], ["sensible", "a.", "明智的（≠sensitive 敏感）"], ["assess", "v.", "评估"], ["blunt", "a.", "钝的；直率的"], ["compliment", "n./v.", "赞美（≠complement 补充）"], ["raise", "v.", "举起；提高（≠rise 上升）"], ["acute", "a.", "敏锐的；急性的"], ["advice", "n.", "建议（不可数；≠advise）"], ["betray", "v.", "背叛；泄露"], ["commercial", "a.", "商业的"], ["chronic", "a.", "慢性的；长期的"], ["economic", "a.", "经济的（≠economical 节约）"], ["comply", "v.", "遵从"], ["asset", "n.", "资产；优势"], ["boast", "v.", "夸耀"], ["adolescent", "n.", "青少年"], ["cling", "v.", "紧抓；依附"], ["dessert", "n.", "甜点（≠desert 沙漠）"], ["bulk", "n.", "大量；体积"], ["morale", "n.", "士气（≠moral）"], ["apparatus", "n.", "器械；装置"], ["conserve", "v.", "保护；节约"], ["collapse", "v.", "倒塌；崩溃"], ["blueprint", "n.", "蓝图；规划"], ["sensitive", "a.", "敏感的（≠sensible）"], ["assert", "v.", "断言；主张"], ["comparable", "a.", "可比的"], ["civilian", "n.", "平民"], ["adjacent", "a.", "邻近的"], ["cease", "v.", "停止"], ["constitute", "v.", "构成"], ["accuse", "v.", "指控；指责"], ["authentic", "a.", "真实的；地道的"], ["absurd", "a.", "荒谬的"], ["except", "prep.", "除……之外（≠expect）"], ["alleviate", "v.", "减轻；缓解"], ["coincide", "v.", "同时发生；一致"], ["boycott", "v./n.", "抵制"], ["compel", "v.", "强迫"], ["historical", "a.", "历史的（≠historic）"], ["conceal", "v.", "隐藏"], ["brutal", "a.", "残忍的"], ["anonymous", "a.", "匿名的"], ["industrial", "a.", "工业的（≠industrious 勤奋）"], ["confine", "v.", "限制"], ["complement", "v.", "补充；补足（≠compliment）"], ["desert", "n./v.", "沙漠；抛弃（≠dessert 甜点）"], ["considerable", "a.", "相当大的"], ["moral", "a.", "道德的（≠morale 士气）"], ["quiet", "a.", "安静的（≠quite 相当）"], ["applicable", "a.", "适用的"], ["bureau", "n.", "局；办事处"], ["collide", "v.", "碰撞"], ["accept", "v.", "接受（≠except 除外）"], ["through", "prep.", "穿过（≠though 虽然）"], ["succeed", "v.", "成功；接替（≠success）"], ["assign", "v.", "分配；指派"], ["capacity", "n.", "容量；能力"], ["consent", "n./v.", "同意"], ["acknowledge", "v.", "承认；致谢"], ["chaos", "n.", "混乱"], ["advise", "v.", "建议（动词；≠advice）"], ["lend", "v.", "借出（≠borrow 借入）"], ["bankrupt", "a.", "破产的"], ["commence", "v.", "开始"], ["compact", "a.", "紧凑的"], ["imaginative", "a.", "富有想象力的（≠imaginary）"], ["concise", "a.", "简洁的"], ["allocate", "v.", "分配"], ["breach", "n./v.", "违反；缺口"], ["condemn", "v.", "谴责"], ["economical", "a.", "节约的（≠economic）"], ["compromise", "n./v.", "妥协"], ["bonus", "n.", "奖金；额外好处"], ["assemble", "v.", "集合；组装"], ["cluster", "n.", "群；簇"], ["advocate", "v.", "提倡；拥护"], ["success", "n.", "成功（≠succeed 动词）"], ["bypass", "v.", "绕过"], ["arbitrary", "a.", "任意的；专断的"], ["quite", "ad.", "相当；完全（≠quiet）"], ["collaborate", "v.", "合作"], ["conscience", "n.", "良心（≠conscious）"]];
+const PER = 6;
+const KEY = "cet4-note-v2";
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function dayDiff(a, b) {
+  const pa = a.split("-").map(Number), pb = b.split("-").map(Number);
+  const da = Date.UTC(pa[0], pa[1] - 1, pa[2]);
+  const db = Date.UTC(pb[0], pb[1] - 1, pb[2]);
+  return Math.round((db - da) / 86400000);
+}
+
+let st = JSON.parse(localStorage.getItem(KEY) || "null");
+if (!st) st = { start: todayStr(), last: "", plan: null, count: {}, due: {}, checks: [] };
+
+const today = todayStr();
+const dayNo = dayDiff(st.start, today) + 1;
+
+// 每天第一次打开时生成当天计划
+if (st.last !== today) {
+  const newStart = (dayNo - 1) * PER;
+  const CAP = 20;
+  const GAPS = [2, 4, 7, 15];
+  let rev = [];
+  if (newStart < WORDS.length && newStart > 0) {
+    const cand = [];
+    for (let i = 0; i < newStart; i++) {
+      const c = st.count[i] || 0;
+      const d = st.due[i] || (Math.floor(i / PER) + 2);
+      if (c < 5 && d <= dayNo) cand.push(i);
+    }
+    cand.sort((a, b) => {
+      const ca = st.count[a] || 0, cb = st.count[b] || 0;
+      if (ca !== cb) return ca - cb;
+      const da = st.due[a] || (Math.floor(a / PER) + 2);
+      const db = st.due[b] || (Math.floor(b / PER) + 2);
+      return da - db || a - b;
+    });
+    for (let k = CAP; k < cand.length; k++) {
+      const i = cand[k];
+      const c = st.count[i] || 0;
+      const d = st.due[i] || (Math.floor(i / PER) + 2);
+      if (dayNo - d > 10 && c >= 3) st.due[i] = 99999;
+    }
+    rev = cand.slice(0, CAP);
+    rev.forEach(i => {
+      const c = (st.count[i] || 0) + 1;
+      st.count[i] = c;
+      st.due[i] = c >= 5 ? 99999 : dayNo + GAPS[c - 1];
+    });
+  }
+  st.plan = { newStart: newStart, rev: rev };
+  st.checks = [];
+  st.last = today;
+  localStorage.setItem(KEY, JSON.stringify(st));
+}
+
+const plan = st.plan;
+const checkedSet = new Set(st.checks || []);
+let items = [];
+
+function makeItem(idx, tag) {
+  const [w, p, m] = WORDS[idx];
+  const el = document.createElement("div");
+  el.className = "item" + (checkedSet.has(idx) ? " done" : "");
+  el.innerHTML = '<div class="cb"></div><div class="txt"><div class="w">' + w +
+    '</div><div class="m">' + p + "  " + m + "</div></div>" +
+    (tag ? '<div class="tag">第' + tag + "次</div>" : "");
+  el.onclick = () => {
+    if (checkedSet.has(idx)) checkedSet.delete(idx); else checkedSet.add(idx);
+    el.classList.toggle("done");
+    st.checks = Array.from(checkedSet);
+    localStorage.setItem(KEY, JSON.stringify(st));
+    renderProgress();
+  };
+  items.push(idx);
+  return el;
+}
+
+const newBox = document.getElementById("newList");
+const revBox = document.getElementById("revList");
+
+if (plan.newStart >= WORDS.length) {
+  newBox.innerHTML = '<div class="empty">本轮 150 词已学完 🎉</div>';
+} else {
+  for (let i = plan.newStart; i < Math.min(plan.newStart + PER, WORDS.length); i++) {
+    newBox.appendChild(makeItem(i, 0));
+  }
+}
+
+if (!plan.rev.length) {
+  revBox.innerHTML = '<div class="empty">今天没有到期单词，明天开始</div>';
+} else {
+  plan.rev.forEach(i => revBox.appendChild(makeItem(i, st.count[i] || 1)));
+}
+
+document.getElementById("day").textContent =
+  (new Date().getMonth() + 1) + "月" + new Date().getDate() + "日 · Day " + dayNo;
+
+function renderProgress() {
+  const total = items.length;
+  let done = 0;
+  items.forEach(i => { if (checkedSet.has(i)) done++; });
+  document.getElementById("bar").style.width = total ? (done / total * 100) + "%" : "0%";
+  document.getElementById("newCount").textContent = "6 个";
+  document.getElementById("revCount").textContent = plan.rev.length + " 个";
+}
+renderProgress();
+
+document.getElementById("reset").onclick = () => {
+  if (confirm("清空全部进度，从第 1 天重新开始？")) {
+    localStorage.removeItem(KEY);
+    location.reload();
+  }
+};
+</script>
+</body>
+</html>
